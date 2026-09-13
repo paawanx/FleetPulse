@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using FleetPulse.Api.Models;
+using FleetPulse.Api.Dtos;
 
 namespace FleetPulse.Api.Controllers;
 
@@ -7,14 +7,14 @@ namespace FleetPulse.Api.Controllers;
 [Route("[controller]")]
 public class VehiclesController : ControllerBase
 {
-    private List<Vehicle> _vehicles = new List<Vehicle>
+    private List<VehicleResponseDto> _vehicles = new List<VehicleResponseDto>
     {
-        new Vehicle { Id = 1, LicensePlate = "TRK-101", Status = "Active" },
-        new Vehicle { Id = 2, LicensePlate = "TRK-102", Status = "Warning" }
+        new VehicleResponseDto { Id = 1, LicensePlate = "TRK-101", Status = "Active" },
+        new VehicleResponseDto { Id = 2, LicensePlate = "TRK-102", Status = "Warning" }
     };
 
     [HttpGet]
-    public IEnumerable<Vehicle> Get()
+    public IEnumerable<VehicleResponseDto> Get()
     {
         return [.._vehicles];
     }

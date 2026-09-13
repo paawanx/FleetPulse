@@ -1,6 +1,6 @@
-namespace FleetPulse.Api.Models;
+namespace FleetPulse.Api.Dtos;
 
-public class Vehicle
+public class VehicleResponseDto
 {
     public int Id { get; set; }
     public string LicensePlate { get; set; }
