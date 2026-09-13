@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using FleetPulse.Api.Dtos;
+using FleetPulse.Api.Interfaces;
 
 namespace FleetPulse.Api.Controllers;
 
@@ -7,6 +8,14 @@ namespace FleetPulse.Api.Controllers;
 [Route("[controller]")]
 public class VehiclesController : ControllerBase
 {
+
+    private readonly IVehicleService _vehicleService;
+
+    public VehiclesController(IVehicleService vehicleService)
+    {
+        _vehicleService = vehicleService;
+    }
+
     private List<VehicleResponseDto> _vehicles = new List<VehicleResponseDto>
     {
         new VehicleResponseDto { Id = 1, LicensePlate = "TRK-101", Status = "Active" },
@@ -14,8 +23,8 @@ public class VehiclesController : ControllerBase
     };
 
     [HttpGet]
-    public IEnumerable<VehicleResponseDto> Get()
+    public async Task<IEnumerable<VehicleResponseDto>> Get()
     {
-        return [.._vehicles];
+        return await _vehicleService.GetAllVehiclesAsync();
     }
 }
