@@ -1,0 +1,28 @@
+# Stage 1: Build the application
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Copy the project files and restore dependencies for cache efficiency
+COPY ["FleetPulse.Api/FleetPulse.Api.csproj", "FleetPulse.Api/"]
+COPY ["FleetPulse.Infrastructure/FleetPulse.Infrastructure.csproj", "FleetPulse.Infrastructure/"]
+COPY ["FleetPulse.Contracts/FleetPulse.Contracts.csproj", "FleetPulse.Contracts/"]
+
+RUN dotnet restore "FleetPulse.Api/FleetPulse.Api.csproj"
+
+# Copy the remaining source code
+COPY FleetPulse.Api/ FleetPulse.Api/
+COPY FleetPulse.Infrastructure/ FleetPulse.Infrastructure/
+COPY FleetPulse.Contracts/ FleetPulse.Contracts/
+
+# Publish the API project
+WORKDIR "/src/FleetPulse.Api"
+RUN dotnet publish "FleetPulse.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Stage 2: Runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
+WORKDIR /app
+
+COPY --from=build /app/publish .
+
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "FleetPulse.Api.dll"]

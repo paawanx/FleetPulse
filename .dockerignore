@@ -1,0 +1,13 @@
+# Ignore build outputs across all projects
+**/bin/
+**/obj/
+
+# Ignore IDE and OS metadata
+**/.vs/
+**/.vscode/
+**/.idea/
+.git/
+
+# Ignore frontend dependencies/builds if they exist in the repo
+**/node_modules/
+**/dist/
