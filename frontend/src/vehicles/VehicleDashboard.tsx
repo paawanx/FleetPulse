@@ -7,7 +7,7 @@ const VehicleDashboard = () => {
     const [error, setError] = useState<string|null>(null);
 
     useEffect(() => {
-        fetch('http://localhost:5017/Vehicles')
+        fetch('http://localhost:8080/Vehicles')
             .then(response => {
                 if (!response.ok){
                     throw new Error('Network response was not ok');
