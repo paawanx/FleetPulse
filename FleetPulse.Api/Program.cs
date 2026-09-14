@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using FleetPulse.Api.Data;
 using FleetPulse.Api.Interfaces;
 using FleetPulse.Api.Services;
+using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,18 @@ builder.Services.AddCors(
         );
     }
 );
+
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("localhost", "/", h =>
+        {
+            h.Username("guest");
+            h.Password("guest");
+        });
+    });
+});
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

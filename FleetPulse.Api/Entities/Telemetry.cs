@@ -7,9 +7,9 @@ public class Telemetry
     [Key]
     public int Id { get; set; }
     public int VehicleId { get; set; }
-    public int SpeedInKmh { get; set; }
-    public int EngineTemperatureInCelsius { get; set; }
-    public int FuelLevelInPercentage { get; set; }
+    public double SpeedInKmh { get; set; }
+    public double EngineTemperatureInCelsius { get; set; }
+    public double FuelLevelInPercentage { get; set; }
     public DateTime Timestamp { get; set; }
 
     public virtual Vehicle Vehicle { get; set; } = null!;

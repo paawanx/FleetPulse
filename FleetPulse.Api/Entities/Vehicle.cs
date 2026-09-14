@@ -8,7 +8,7 @@ public class Vehicle
     public string LicensePlate { get; set; } = null!;
     public string DriverName { get; set; } = null!;
     public string Status { get; set; } = "Pending";
-    public string LastLongitude { get; set; } = string.Empty;
-    public string LastLatitude { get; set; } = string.Empty;
+    public double LastLongitude { get; set; } = 0;
+    public double LastLatitude { get; set; } = 0;
     public DateTime LastUpdated { get; set; }
 }
