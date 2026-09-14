@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace FleetPulse.Api.Entities;
+namespace FleetPulse.Infrastructure.Entities;
 public class Vehicle
 {
     [Key]

@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using FleetPulse.Api.Data;
+using FleetPulse.Infrastructure.Data;
 using FleetPulse.Api.Interfaces;
 using FleetPulse.Api.Services;
 using MassTransit;
@@ -12,7 +12,10 @@ builder.Services.AddScoped<IVehicleService, VehicleService>();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(
-    options => options.UseNpgsql(connectionString)
+    options => options.UseNpgsql(
+        connectionString,
+        b => b.MigrationsAssembly("FleetPulse.Infrastructure")
+    )
 );
 
 var myAllowSpecificOrigins = "_myAllowSpecificOrigins";

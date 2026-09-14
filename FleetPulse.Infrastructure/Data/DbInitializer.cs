@@ -1,7 +1,7 @@
-using FleetPulse.Api.Entities;
+using FleetPulse.Infrastructure.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace FleetPulse.Api.Data
+namespace FleetPulse.Infrastructure.Data
 {
     public static class DbInitializer
     {

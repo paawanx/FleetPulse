@@ -10,7 +10,7 @@
     <PackageReference Include="MassTransit" Version="8.2.5" />
     <PackageReference Include="MassTransit.RabbitMQ" Version="8.2.5" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FleetPulse.Contracts\FleetPulse.Contracts.csproj" />
+    <ProjectReference Include="..\FleetPulse.Infrastructure\FleetPulse.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

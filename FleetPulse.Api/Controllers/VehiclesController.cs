@@ -30,7 +30,7 @@ public class VehiclesController : ControllerBase
     public async Task<IActionResult> PostTelemetry([FromBody] VehicleTelemetryRequestDto requestDto)
     {
         var telemetryEvent = new VehicleTelemetryEvent(
-            requestDto.Id,
+            requestDto.VehicleId,
             requestDto.Latitude,
             requestDto.Longitude,
             requestDto.Speed,

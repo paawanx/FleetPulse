@@ -15,5 +15,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FleetPulse.Contracts\FleetPulse.Contracts.csproj" />
+    <ProjectReference Include="..\FleetPulse.Infrastructure\FleetPulse.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

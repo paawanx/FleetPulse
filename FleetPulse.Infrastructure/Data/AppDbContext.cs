@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using FleetPulse.Api.Entities;
+using FleetPulse.Infrastructure.Entities;
 
-namespace FleetPulse.Api.Data;
+namespace FleetPulse.Infrastructure.Data;
 
 public class AppDbContext: DbContext
 {

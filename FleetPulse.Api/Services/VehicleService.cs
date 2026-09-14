@@ -1,6 +1,6 @@
 using FleetPulse.Api.Dtos;
 using FleetPulse.Api.Interfaces;
-using FleetPulse.Api.Data;
+using FleetPulse.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace FleetPulse.Api.Services;
