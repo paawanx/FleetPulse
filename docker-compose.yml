@@ -36,6 +36,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=fleetpulse;Username=postgres;Password=fleetpulse
       - RabbitMq__Host=rabbitmq
+      - RabbitMq__Enabled=true
     depends_on:
       postgres:
         condition: service_healthy

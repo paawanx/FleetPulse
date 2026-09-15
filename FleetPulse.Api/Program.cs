@@ -35,17 +35,23 @@ builder.Services.AddCors(
     }
 );
 
-builder.Services.AddMassTransit(x =>
+if (builder.Configuration.GetValue<bool>("RabbitMq:Enabled"))
 {
-    x.UsingRabbitMq((context, cfg) =>
+    builder.Services.AddMassTransit(x =>
     {
-        cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", "/", h =>
+        x.UsingRabbitMq((context, cfg) =>
         {
-            h.Username("guest");
-            h.Password("guest");
+            cfg.Host(
+                builder.Configuration["RabbitMq:Host"] ?? "localhost",
+                "/",
+                h =>
+                {
+                    h.Username("guest");
+                    h.Password("guest");
+                });
         });
     });
-});
+}
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
