@@ -37,6 +37,11 @@ services:
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=fleetpulse;Username=postgres;Password=fleetpulse
       - RabbitMq__Host=rabbitmq
       - RabbitMq__Enabled=true
+    healthcheck: 
+      test: ["CMD", "wget", "--spider", "--no-verbose", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     depends_on:
       postgres:
         condition: service_healthy
