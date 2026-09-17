@@ -1,5 +1,5 @@
 # Stage 1: Build the application
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy the project files and restore dependencies for cache efficiency
@@ -16,10 +16,15 @@ COPY FleetPulse.Contracts/ FleetPulse.Contracts/
 
 # Publish the Worker project
 WORKDIR "/src/FleetPulse.Worker"
-RUN dotnet publish "FleetPulse.Worker.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "FleetPulse.Worker.csproj" \
+    -c Release \
+    -o /app/publish \
+    -r linux-${TARGETARCH} \
+    --self-contained false \
+    /p:UseAppHost=false
 
 # Stage 2: Runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
+FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
 
 COPY --from=build /app/publish .
