@@ -96,4 +96,30 @@ jobs:
         if: steps.changes.outputs.frontend == 'true'
         run: |
           docker push $ECR_REGISTRY/fleetpulse/frontend:$IMAGE_TAG
-          docker push $ECR_REGISTRY/fleetpulse/frontend:latest
+          docker push $ECR_REGISTRY/fleetpulse/frontend:latest'
+
+      - name: Download API task definition
+        if: steps.changes.outputs.api == 'true'
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition fleetpulse-api \
+            --region $AWS_REGION \
+            --query taskDefinition > task-definition.json
+
+      - name: Render API task definition with new image tag
+        if: steps.changes.outputs.api == 'true'
+        id: render-api
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: fleetpulse-api
+          image: ${{ env.ECR_REGISTRY }}/fleetpulse/api:${{ env.IMAGE_TAG }}
+
+      - name: Deploy API to Amazon ECS
+        if: steps.changes.outputs.api == 'true'
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-api.outputs.task-definition }}
+          service: fleetpulse-api
+          cluster: fleetpulse
+          wait-for-service-stability: true
