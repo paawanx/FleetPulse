@@ -24,7 +24,7 @@ RUN dotnet publish "FleetPulse.Api.csproj" \
     /p:UseAppHost=false
 
 # Stage 2: Runtime image
-FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
 
 COPY --from=build /app/publish .
