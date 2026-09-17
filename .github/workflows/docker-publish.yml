@@ -126,3 +126,29 @@ jobs:
           service: fleetpulse-api
           cluster: fleetpulse
           wait-for-service-stability: true
+
+      - name: Download Worker task definition
+        if: steps.changes.outputs.worker == 'true'
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition fleetpulse-worker \
+            --region $AWS_REGION \
+            --query taskDefinition > task-definition.json
+
+      - name: Render Worker task definition with new image tag
+        if: steps.changes.outputs.worker == 'true'
+        id: render-worker
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: fleetpulse-worker
+          image: ${{ env.ECR_REGISTRY }}/fleetpulse/worker:${{ env.IMAGE_TAG }}
+
+      - name: Deploy Worker to Amazon ECS
+        if: steps.changes.outputs.worker == 'true'
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-worker.outputs.task-definition }}
+          service: fleetpulse-worker
+          cluster: fleetpulse
+          wait-for-service-stability: true

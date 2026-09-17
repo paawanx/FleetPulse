@@ -14,7 +14,7 @@ COPY FleetPulse.Worker/ FleetPulse.Worker/
 COPY FleetPulse.Infrastructure/ FleetPulse.Infrastructure/
 COPY FleetPulse.Contracts/ FleetPulse.Contracts/
 
-# Publish the Worker project
+# Publish the Worker project.
 WORKDIR "/src/FleetPulse.Worker"
 RUN dotnet publish "FleetPulse.Worker.csproj" \
     -c Release \
