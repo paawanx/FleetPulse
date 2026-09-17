@@ -35,7 +35,8 @@ jobs:
           docker build \
             -t $ECR_REGISTRY/fleetpulse/api:${{ github.sha }} \
             -t $ECR_REGISTRY/fleetpulse/api:latest \
-            ./FleetPulse.Api
+            -f ./FleetPulse.Api/dockerfile \
+            .
 
       - name: Push API image
         run: |
