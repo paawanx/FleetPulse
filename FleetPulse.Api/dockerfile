@@ -14,7 +14,7 @@ COPY FleetPulse.Api/ FleetPulse.Api/
 COPY FleetPulse.Infrastructure/ FleetPulse.Infrastructure/
 COPY FleetPulse.Contracts/ FleetPulse.Contracts/
 
-# Publish the API project
+# Publish the API project.
 WORKDIR "/src/FleetPulse.Api"
 RUN dotnet publish "FleetPulse.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 

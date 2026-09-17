@@ -57,6 +57,7 @@ jobs:
         if: steps.changes.outputs.api == 'true'
         run: |
           docker build \
+            --platform linux/arm64 \
             -t $ECR_REGISTRY/fleetpulse/api:$IMAGE_TAG \
             -t $ECR_REGISTRY/fleetpulse/api:latest \
             -f ./FleetPulse.Api/dockerfile \
@@ -72,6 +73,7 @@ jobs:
         if: steps.changes.outputs.worker == 'true'
         run: |
           docker build \
+            --platform linux/arm64 \
             -t $ECR_REGISTRY/fleetpulse/worker:$IMAGE_TAG \
             -t $ECR_REGISTRY/fleetpulse/worker:latest \
             -f ./FleetPulse.Worker/dockerfile \
@@ -87,6 +89,7 @@ jobs:
         if: steps.changes.outputs.frontend == 'true'
         run: |
           docker build \
+            --platform linux/arm64 \
             -t $ECR_REGISTRY/fleetpulse/frontend:$IMAGE_TAG \
             -t $ECR_REGISTRY/fleetpulse/frontend:latest \
             -f ./frontend/Dockerfile \
