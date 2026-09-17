@@ -54,6 +54,7 @@ jobs:
         run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
       - name: Build API image
+        if: steps.changes.outputs.api == 'true'
         run: |
           docker build \
             -t $ECR_REGISTRY/fleetpulse/api:$IMAGE_TAG \
@@ -62,6 +63,37 @@ jobs:
             .
 
       - name: Push API image
+        if: steps.changes.outputs.api == 'true'
         run: |
           docker push $ECR_REGISTRY/fleetpulse/api:$IMAGE_TAG
           docker push $ECR_REGISTRY/fleetpulse/api:latest
+
+      - name: Build Worker image
+        if: steps.changes.outputs.worker == 'true'
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/fleetpulse/worker:$IMAGE_TAG \
+            -t $ECR_REGISTRY/fleetpulse/worker:latest \
+            -f ./FleetPulse.Worker/dockerfile \
+            .
+
+      - name: Push Worker image
+        if: steps.changes.outputs.worker == 'true'
+        run: |
+          docker push $ECR_REGISTRY/fleetpulse/worker:$IMAGE_TAG
+          docker push $ECR_REGISTRY/fleetpulse/worker:latest
+
+      - name: Build Frontend image
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/fleetpulse/frontend:$IMAGE_TAG \
+            -t $ECR_REGISTRY/fleetpulse/frontend:latest \
+            -f ./frontend/Dockerfile \
+            .
+
+      - name: Push Frontend image
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          docker push $ECR_REGISTRY/fleetpulse/frontend:$IMAGE_TAG
+          docker push $ECR_REGISTRY/fleetpulse/frontend:latest
