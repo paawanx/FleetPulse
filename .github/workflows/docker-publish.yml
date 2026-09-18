@@ -154,11 +154,46 @@ jobs:
           cd frontend
           npm ci
           
-          # Get running API IP
-          API_TASK=$(aws ecs list-tasks --cluster fleetpulse --service-name fleetpulse-api --desired-status RUNNING --query 'taskArns[0]' --output text --region $AWS_REGION)
-          ENI=$(aws ecs describe-tasks --cluster fleetpulse --tasks "$API_TASK" --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' --output text --region $AWS_REGION)
-          API_IP=$(aws ec2 describe-network-interfaces --network-interface-ids "$ENI" --query 'NetworkInterfaces[0].Association.PublicIp' --output text --region $AWS_REGION)
+          # 1. Fetch current running API Task ARN
+          API_TASK=$(aws ecs list-tasks \
+            --cluster fleetpulse \
+            --service-name fleetpulse-api \
+            --desired-status RUNNING \
+            --query 'taskArns[0]' \
+            --output text \
+            --region $AWS_REGION)
 
+          if [ -z "$API_TASK" ] || [ "$API_TASK" == "None" ]; then
+            echo "ERROR: No running task found for service fleetpulse-api."
+            exit 1
+          fi
+
+          echo "Task ARN: $API_TASK"
+
+          # 2. Extract ENI using quotes instead of backticks to avoid YAML/Bash string issues
+          ENI=$(aws ecs describe-tasks \
+            --cluster fleetpulse \
+            --tasks "$API_TASK" \
+            --region $AWS_REGION \
+            --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value | [0]" \
+            --output text)
+
+          if [ -z "$ENI" ] || [ "$ENI" == "None" ]; then
+            echo "ERROR: Failed to retrieve ENI ID from task $API_TASK."
+            exit 1
+          fi
+
+          echo "Network Interface ID: $ENI"
+
+          # 3. Get Public IP from ENI
+          API_IP=$(aws ec2 describe-network-interfaces \
+            --network-interface-ids "$ENI" \
+            --region $AWS_REGION \
+            --query 'NetworkInterfaces[0].Association.PublicIp' \
+            --output text)
+
+          echo "Detected API Public IP: $API_IP"
+          
           # Inject into Vite build
           echo "VITE_API_URL=http://$API_IP:8080" > .env.production
 
