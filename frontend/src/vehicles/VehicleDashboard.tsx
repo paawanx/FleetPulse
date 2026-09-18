@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react'
 import { IVehicle } from './IVehicle';
 
 const VehicleDashboard = () => {
+    const API_URL = (import.meta as ImportMeta & {
+        env: { VITE_API_URL: string };
+    }).env.VITE_API_URL;
+
     const [vehicles, setVehicles] = useState<IVehicle[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string|null>(null);
 
     useEffect(() => {
-        fetch('http://localhost:8080/Vehicles')
+        fetch(`${API_URL}/Vehicles`)
             .then(response => {
                 if (!response.ok){
                     throw new Error('Network response was not ok');
