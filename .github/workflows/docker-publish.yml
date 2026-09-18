@@ -99,7 +99,7 @@ jobs:
         if: steps.changes.outputs.frontend == 'true'
         run: |
           docker push $ECR_REGISTRY/fleetpulse/frontend:$IMAGE_TAG
-          docker push $ECR_REGISTRY/fleetpulse/frontend:latest'
+          docker push $ECR_REGISTRY/fleetpulse/frontend:latest
 
       - name: Download API task definition
         if: steps.changes.outputs.api == 'true'
