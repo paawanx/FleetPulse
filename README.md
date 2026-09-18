@@ -1,10 +1,10 @@
 # FleetPulse
 
-FleetPulse is a small fleet-management application used as a hands-on learning project for building and operating a cloud-native application on AWS.
+FleetPulse is a small fleet-management application built as a hands-on learning project.
 
-The goal is to learn the pieces of a real application end to end: application architecture, containers, messaging, databases, AWS networking, IAM, ECS, CI/CD, and static frontend delivery.
+The purpose of the project is to learn how to design, containerize, deploy, operate, and evolve a modern application using .NET and AWS. The infrastructure is intentionally built incrementally so that the reasoning behind each component and the trade-offs involved can be understood.
 
-This is intentionally a learning project rather than a production-ready platform. The infrastructure is kept relatively simple and cost-conscious so that each AWS component can be understood and operated directly.
+This is a learning project, not a production-ready fleet-management platform.
 
 ## Architecture
 
@@ -33,7 +33,9 @@ This is intentionally a learning project rather than a production-ready platform
           PostgreSQL
 ```
 
-The API and worker run as separate ECS/Fargate services. RabbitMQ is used for asynchronous messaging through MassTransit. PostgreSQL is hosted in Amazon RDS. The React frontend is built as static files, uploaded to S3, and served through CloudFront.
+The API and worker run as separate ECS/Fargate services. RabbitMQ provides asynchronous messaging through MassTransit. PostgreSQL is hosted in Amazon RDS. The React frontend is built as static files, uploaded to S3, and served through CloudFront.
+
+Lambda and API Gateway are planned as the next serverless part of the project, with a real FleetPulse use case rather than being added simply to demonstrate another AWS service.
 
 ## Current stack
 
@@ -60,6 +62,8 @@ The API and worker run as separate ECS/Fargate services. RabbitMQ is used for as
 * Amazon RDS for PostgreSQL
 * Amazon S3
 * Amazon CloudFront
+* AWS Lambda (planned)
+* Amazon API Gateway (planned)
 * AWS Systems Manager Parameter Store
 * IAM
 * CloudWatch Logs
@@ -77,27 +81,33 @@ The API and worker run as separate ECS/Fargate services. RabbitMQ is used for as
 ## What is working
 
 * Local multi-container development with Docker Compose.
-* API containerized with a multi-stage Docker build.
+* API containerized using a multi-stage Docker build.
 * Worker containerized separately from the API.
-* Docker builds use the repository root as build context so projects referenced by the API and worker can be restored correctly.
+* Docker builds use the repository root as the build context so referenced projects can be restored correctly.
 * ARM64 images are built for the ECS Fargate runtime used by the project.
 * API image is stored in ECR and deployed to the `fleetpulse-api` ECS service.
 * Worker image is stored in ECR and deployed to the `fleetpulse-worker` ECS service.
-* API has an ECS health check and exposes `/health` on port 8080.
-* PostgreSQL runs in Amazon RDS and the API connects to it using configuration stored in SSM Parameter Store.
-* RabbitMQ runs in ECS and the API/worker communicate through it using MassTransit.
+* API exposes `/health` and has an ECS container health check.
+* PostgreSQL runs in Amazon RDS.
+* Application database configuration is stored in SSM Parameter Store rather than in the container image.
+* RabbitMQ runs in ECS and API/worker messaging uses MassTransit.
 * ECS networking and security groups are configured for the running services.
-* Frontend is built with Vite and deployed to S3.
-* CloudFront serves the frontend using a private S3 origin with CloudFront access control.
-* GitHub Actions authenticates to AWS using OIDC rather than storing long-lived AWS access keys.
-* The GitHub workflow detects which part of the application changed, so backend images are not rebuilt unnecessarily for frontend-only changes.
-* When the API changes, the workflow discovers the current running API task's public IP and injects it into the frontend build so the deployed frontend points at the current API task.
+* React frontend is built with Vite and deployed to S3.
+* CloudFront serves the frontend using a private S3 origin.
+* GitHub Actions authenticates to AWS using OIDC rather than long-lived AWS access keys.
+* The workflow detects which part of the application changed, avoiding unnecessary backend builds.
+* When the API is deployed, the workflow discovers the current API task's public IP and injects it into the frontend build.
+* Frontend deployment includes uploading the generated static files to S3 and invalidating CloudFront.
 
 ## CI/CD flow
 
-The workflow lives in `.github/workflows/docker-publish.yml`.
+The workflow lives in:
 
-A simplified flow is:
+```text
+.github/workflows/docker-publish.yml
+```
+
+The current flow is approximately:
 
 ```text
 Push to main
@@ -105,86 +115,281 @@ Push to main
     v
 Detect changed paths
     |
-    +---- API changed ------> Build ARM64 image -> ECR -> ECS
+    +---- API changed ------> Build ARM64 image
+    |                              |
+    |                              v
+    |                             ECR
+    |                              |
+    |                              v
+    |                         ECS service
     |
-    +---- Worker changed ---> Build ARM64 image -> ECR -> ECS
+    +---- Worker changed ---> Build ARM64 image
+    |                              |
+    |                              v
+    |                             ECR
+    |                              |
+    |                              v
+    |                         ECS service
     |
-    +---- Frontend/API -----> Discover API IP -> Vite build -> S3 -> CloudFront
+    +---- Frontend/API -----> Discover API IP
+                                   |
+                                   v
+                              Vite build
+                                   |
+                                   v
+                                  S3
+                                   |
+                                   v
+                              CloudFront
 ```
 
-The API is deliberately included in the frontend deployment trigger because replacing an ECS task can result in a different public IP. The current setup therefore rebuilds the frontend when the API is deployed.
+The frontend deployment also runs when the API changes because the current architecture exposes the API through the ECS task's public IP. Replacing an ECS task can therefore result in a different IP address.
+
+This is a deliberate temporary design and is one of the next architectural problems to solve.
+
+## Image tagging
+
+ECR images use a short Git commit SHA as the deployment tag.
+
+For example:
+
+```text
+v0.1.4
+90512fb
+latest
+```
+
+The commit-based tag provides a direct relationship between an image and the source revision that produced it, while `latest` provides a convenient moving reference.
+
+The deployment process can use the immutable image digest when exact image identity matters.
 
 ## What is left
 
-The project is functional, but several areas remain intentionally open for further learning:
+The project is functional, but several areas remain intentionally open for further learning.
 
-1. **Stable API endpoint**
+### 1. Lambda + API Gateway
 
-   * Remove the frontend's dependency on an ECS task public IP.
-   * Learn the AWS options for exposing an ECS service through a stable endpoint and compare their cost and operational trade-offs.
+Add a meaningful serverless workload to FleetPulse.
 
-2. **Observability**
+Topics to explore:
 
-   * Improve CloudWatch logging and make logs easier to navigate.
-   * Add useful application and infrastructure metrics.
-   * Learn alarms and basic operational dashboards.
+* .NET Lambda functions
+* Lambda execution roles
+* API Gateway integration
+* Event-driven Lambda triggers
+* EventBridge and/or S3 events
+* Configuration
+* Timeouts
+* Retries
+* Cold starts
+* Failure handling
+* Lambda versus ECS for different workloads
 
-3. **Deployment and failure behavior**
+The goal is to understand when serverless is a good architectural choice rather than simply adding a Lambda function.
 
-   * Understand ECS rolling deployments in more detail.
-   * Explore health checks, failed deployments, rollback behavior, and service stabilization.
+### 2. Stable API endpoint
 
-4. **Container/image lifecycle**
+The frontend currently depends on the public IP of the running ECS API task.
 
-   * Add an ECR lifecycle policy to clean up old or untagged images.
-   * Learn how image tags and immutable digests should be used together.
+Replace this with a stable endpoint and explore the trade-offs between:
 
-5. **Security hardening**
+* Application Load Balancer
+* API Gateway
+* DNS
+* Other AWS networking options
 
-   * Review security-group rules and reduce unnecessary public exposure.
-   * Review IAM permissions and separate execution/task responsibilities where appropriate.
-   * Review secrets and configuration management.
+Consider cost, TLS, health checks, routing, scalability, and operational complexity.
 
-6. **Infrastructure as Code**
+### 3. Observability
 
-   * Recreate the AWS infrastructure with Terraform or another IaC approach.
-   * Compare manually created resources with reproducible infrastructure.
+Improve the operational visibility of the application.
 
-7. **Application quality**
+Explore:
 
-   * Add automated tests.
-   * Add CI checks such as build/test validation before deployment.
-   * Improve error handling and operational diagnostics.
+* Structured application logging
+* CloudWatch Logs
+* Request/correlation IDs
+* Application metrics
+* ECS metrics
+* Health/readiness checks
+* CloudWatch alarms
+* Basic operational dashboards
+* Troubleshooting failed requests and deployments
 
-8. **Cost management**
+### 4. CI/CD quality gates
 
-   * Understand the cost of each running AWS component.
-   * Clean up resources that are not needed while learning.
-   * Document the cost-conscious choices made in this project.
+The pipeline currently focuses heavily on building and deploying.
+
+Add:
+
+* Unit tests
+* Integration tests where useful
+* Build validation
+* Test gates before deployment
+* Clear separation between validation and deployment
+
+The goal is to make the deployment pipeline protect the application rather than simply automate deployment.
+
+### 5. ECS deployment behavior
+
+Understand what happens when a deployment succeeds, fails, or becomes unhealthy.
+
+Explore:
+
+* Rolling deployments
+* Desired count
+* Deployment configuration
+* Minimum/maximum healthy percentages
+* Task health checks
+* Task replacement
+* Service stabilization
+* Failed deployments
+* Rollbacks
+
+### 6. Container and ECR lifecycle
+
+Clean up the container lifecycle.
+
+Explore:
+
+* ECR lifecycle policies
+* Untagged images
+* Old image cleanup
+* Image retention
+* Tags versus immutable digests
+
+### 7. Security hardening
+
+Review the current AWS security model.
+
+Explore:
+
+* Least-privilege IAM
+* ECS task role versus execution role
+* Security-group rules
+* Public versus private networking
+* RDS exposure
+* SSM Parameter Store
+* GitHub OIDC permissions
+* Removing unnecessary public access
+
+### 8. Infrastructure as Code
+
+Recreate the infrastructure using Terraform.
+
+The goal is to move from manually created AWS resources toward reproducible infrastructure.
+
+Potential resources include:
+
+```text
+VPC
+ECS
+ECR
+RDS
+S3
+CloudFront
+IAM
+SSM
+Lambda
+API Gateway
+```
+
+### 9. Application quality
+
+Continue improving the application itself.
+
+Explore:
+
+* Unit tests
+* Integration tests
+* API validation
+* Error handling
+* Persistence patterns
+* Messaging reliability
+* Idempotency
+* Retry behavior
+* Dead-letter/error handling
+
+### 10. Cost management
+
+Understand what the application actually costs to run.
+
+Review:
+
+* ECS/Fargate
+* RDS
+* CloudFront
+* S3
+* CloudWatch
+* ECR
+* NAT/networking
+* Lambda
+* API Gateway
+
+The goal is to understand the relationship between architecture, usage, reliability, and cost.
 
 ## Learning notes
 
-The project is being built incrementally. The infrastructure choices are therefore not presented as a claim that this is the only or universally recommended AWS architecture.
+The infrastructure is being built incrementally.
 
-The repository is a record of what was built, what was learned, what trade-offs were encountered, and what remains to be explored.
+Some decisions in the current implementation are intentionally temporary. They exist because they allow the application to be deployed and the underlying AWS concepts to be learned before introducing additional infrastructure.
+
+The project is therefore not intended to present a single "correct" AWS architecture.
+
+The repository documents what was built, what was learned, the problems encountered, and the next architectural questions to investigate.
+
+Some of the questions being explored include:
+
+* When should a workload use ECS versus Lambda?
+* When does an application need a load balancer?
+* How should a service get a stable endpoint?
+* How should secrets be managed?
+* How should CI/CD authenticate with AWS?
+* How should asynchronous work be handled?
+* How do health checks affect deployments?
+* How should cloud infrastructure be reproduced?
+* How do architecture decisions affect cost?
 
 ## Repository structure
 
 ```text
 FleetPulse/
-├── FleetPulse.Api/             # ASP.NET Core API
-├── FleetPulse.Contracts/       # Shared contracts/messages
-├── FleetPulse.Infrastructure/  # Data and infrastructure concerns
-├── FleetPulse.Worker/          # Background worker / message consumer
-├── frontend/                   # React + Vite frontend
-├── .github/workflows/          # GitHub Actions CI/CD
-├── docker-compose.yml          # Local development stack
+├── FleetPulse.Api/              # ASP.NET Core API
+├── FleetPulse.Contracts/        # Shared contracts/messages
+├── FleetPulse.Infrastructure/   # Data and infrastructure concerns
+├── FleetPulse.Worker/           # Background worker / message consumer
+├── frontend/                    # React + Vite frontend
+├── .github/workflows/           # GitHub Actions CI/CD
+├── docker-compose.yml           # Local development stack
 ├── .dockerignore
 └── FleetPulse.slnx
 ```
 
 ## Status
 
-**Working end to end:** local application + AWS deployment + automated deployment pipeline.
+**Working end to end**
 
-**Still evolving:** stable API exposure, observability, security hardening, cost controls, automated tests, and infrastructure as code.
+* Local development
+* Containerized API and worker
+* PostgreSQL
+* RabbitMQ/MassTransit
+* ECS/Fargate deployment
+* ECR
+* S3 frontend hosting
+* CloudFront
+* GitHub Actions
+* GitHub OIDC authentication
+* Automated backend and frontend deployment
+
+**Currently being explored**
+
+* Lambda
+* API Gateway
+* Stable API endpoint
+* Observability
+* CI/CD quality gates
+* ECS deployment resilience
+* Security hardening
+* Terraform
+* Automated testing
+* Cost management
