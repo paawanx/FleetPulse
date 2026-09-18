@@ -15,11 +15,10 @@ env:
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -53,6 +52,7 @@ jobs:
       - name: Set image tag
         run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
+      # API DEPLOYMENT
       - name: Build API image
         if: steps.changes.outputs.api == 'true'
         run: |
@@ -69,6 +69,33 @@ jobs:
           docker push $ECR_REGISTRY/fleetpulse/api:$IMAGE_TAG
           docker push $ECR_REGISTRY/fleetpulse/api:latest
 
+      - name: Download API task definition
+        if: steps.changes.outputs.api == 'true'
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition fleetpulse-api \
+            --region $AWS_REGION \
+            --query taskDefinition > task-definition-api.json
+
+      - name: Render API task definition with new image tag
+        if: steps.changes.outputs.api == 'true'
+        id: render-api
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition-api.json
+          container-name: fleetpulse-api
+          image: ${{ env.ECR_REGISTRY }}/fleetpulse/api:${{ env.IMAGE_TAG }}
+
+      - name: Deploy API to Amazon ECS
+        if: steps.changes.outputs.api == 'true'
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-api.outputs.task-definition }}
+          service: fleetpulse-api
+          cluster: fleetpulse
+          wait-for-service-stability: true
+
+      # WORKER DEPLOYMENT
       - name: Build Worker image
         if: steps.changes.outputs.worker == 'true'
         run: |
@@ -85,62 +112,20 @@ jobs:
           docker push $ECR_REGISTRY/fleetpulse/worker:$IMAGE_TAG
           docker push $ECR_REGISTRY/fleetpulse/worker:latest
 
-      - name: Build Frontend image
-        if: steps.changes.outputs.frontend == 'true'
-        run: |
-          docker build \
-            --platform linux/arm64 \
-            -t $ECR_REGISTRY/fleetpulse/frontend:$IMAGE_TAG \
-            -t $ECR_REGISTRY/fleetpulse/frontend:latest \
-            -f ./frontend/Dockerfile \
-            .
-
-      - name: Push Frontend image
-        if: steps.changes.outputs.frontend == 'true'
-        run: |
-          docker push $ECR_REGISTRY/fleetpulse/frontend:$IMAGE_TAG
-          docker push $ECR_REGISTRY/fleetpulse/frontend:latest
-
-      - name: Download API task definition
-        if: steps.changes.outputs.api == 'true'
-        run: |
-          aws ecs describe-task-definition \
-            --task-definition fleetpulse-api \
-            --region $AWS_REGION \
-            --query taskDefinition > task-definition.json
-
-      - name: Render API task definition with new image tag
-        if: steps.changes.outputs.api == 'true'
-        id: render-api
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition.json
-          container-name: fleetpulse-api
-          image: ${{ env.ECR_REGISTRY }}/fleetpulse/api:${{ env.IMAGE_TAG }}
-
-      - name: Deploy API to Amazon ECS
-        if: steps.changes.outputs.api == 'true'
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.render-api.outputs.task-definition }}
-          service: fleetpulse-api
-          cluster: fleetpulse
-          wait-for-service-stability: true
-
       - name: Download Worker task definition
         if: steps.changes.outputs.worker == 'true'
         run: |
           aws ecs describe-task-definition \
             --task-definition fleetpulse-worker \
             --region $AWS_REGION \
-            --query taskDefinition > task-definition.json
+            --query taskDefinition > task-definition-worker.json
 
       - name: Render Worker task definition with new image tag
         if: steps.changes.outputs.worker == 'true'
         id: render-worker
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-definition.json
+          task-definition: task-definition-worker.json
           container-name: fleetpulse-worker
           image: ${{ env.ECR_REGISTRY }}/fleetpulse/worker:${{ env.IMAGE_TAG }}
 
@@ -152,3 +137,21 @@ jobs:
           service: fleetpulse-worker
           cluster: fleetpulse
           wait-for-service-stability: true
+
+      # FRONTEND DEPLOYMENT
+      - name: Setup Node.js
+        if: steps.changes.outputs.frontend == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build and Deploy Frontend
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+          aws s3 sync dist/ s3://fleetpulse-frontend-061391278883-us-east-1-an --delete
+          aws cloudfront create-invalidation --distribution-id E24GL68WTB6AAK --paths "/*"

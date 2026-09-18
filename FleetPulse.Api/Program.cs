@@ -28,7 +28,7 @@ builder.Services.AddCors(
             name: myAllowSpecificOrigins,
             policy =>
             {
-                policy.WithOrigins("http://localhost:5173")
+                policy.WithOrigins(["http://localhost:5173","http://d1331wv9mzcvfl.cloudfront.net"])
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             }
