@@ -148,55 +148,36 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Fetch API IP, Build, and Deploy Frontend
-        # Trigger if EITHER frontend or api code changed
         if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.api == 'true'
         run: |
-          cd frontend
-          npm ci
-          
-          # 1. Fetch current running API Task ARN
+          # 1. Fetch current running API Task Public IP using jq
           API_TASK=$(aws ecs list-tasks \
             --cluster fleetpulse \
             --service-name fleetpulse-api \
             --desired-status RUNNING \
+            --region $AWS_REGION \
             --query 'taskArns[0]' \
-            --output text \
-            --region $AWS_REGION)
+            --output text)
 
-          if [ -z "$API_TASK" ] || [ "$API_TASK" == "None" ]; then
-            echo "ERROR: No running task found for service fleetpulse-api."
-            exit 1
-          fi
-
-          echo "Task ARN: $API_TASK"
-
-          # 2. Extract ENI using quotes instead of backticks to avoid YAML/Bash string issues
           ENI=$(aws ecs describe-tasks \
             --cluster fleetpulse \
             --tasks "$API_TASK" \
-            --region $AWS_REGION \
-            --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value | [0]" \
-            --output text)
+            --region $AWS_REGION | jq -r '.tasks[0].attachments[].details[] | select(.name=="networkInterfaceId").value')
 
-          if [ -z "$ENI" ] || [ "$ENI" == "None" ]; then
-            echo "ERROR: Failed to retrieve ENI ID from task $API_TASK."
-            exit 1
-          fi
-
-          echo "Network Interface ID: $ENI"
-
-          # 3. Get Public IP from ENI
           API_IP=$(aws ec2 describe-network-interfaces \
             --network-interface-ids "$ENI" \
             --region $AWS_REGION \
             --query 'NetworkInterfaces[0].Association.PublicIp' \
             --output text)
 
-          echo "Detected API Public IP: $API_IP"
-          
-          # Inject into Vite build
-          echo "VITE_API_URL=http://$API_IP:8080" > .env.production
+          echo "Detected Running API IP: $API_IP"
 
+          # 2. Inject environment variable & build React bundle
+          cd frontend
+          echo "VITE_API_URL=http://$API_IP:8080" > .env.production
+          npm ci
           npm run build
+
+          # 3. Deploy to S3 and invalidate CloudFront
           aws s3 sync dist/ s3://fleetpulse-frontend-061391278883-us-east-1-an --delete
           aws cloudfront create-invalidation --distribution-id E24GL68WTB6AAK --paths "/*"

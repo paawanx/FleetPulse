@@ -1,4 +1,4 @@
-# Stage 1: Build the frontend
+# Stage 1: Build the frontend.
 FROM --platform=$BUILDPLATFORM node:20-alpine AS build
 
 WORKDIR /app
