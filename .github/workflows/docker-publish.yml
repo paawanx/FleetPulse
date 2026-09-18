@@ -155,7 +155,7 @@ jobs:
           npm ci
           
           # Get running API IP
-          API_TASK=$(aws ecs list-tasks --cluster fleetpulse --service-name fleetpulse-api --desired-status RUNNING --query 'taskArns[0]' --output text --region$AWS_REGION)
+          API_TASK=$(aws ecs list-tasks --cluster fleetpulse --service-name fleetpulse-api --desired-status RUNNING --query 'taskArns[0]' --output text --region $AWS_REGION)
           ENI=$(aws ecs describe-tasks --cluster fleetpulse --tasks "$API_TASK" --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' --output text --region $AWS_REGION)
           API_IP=$(aws ec2 describe-network-interfaces --network-interface-ids "$ENI" --query 'NetworkInterfaces[0].Association.PublicIp' --output text --region $AWS_REGION)
 
