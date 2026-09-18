@@ -9,7 +9,7 @@ COPY ["FleetPulse.Contracts/FleetPulse.Contracts.csproj", "FleetPulse.Contracts/
 
 RUN dotnet restore "FleetPulse.Api/FleetPulse.Api.csproj"
 
-# Copy the remaining source code
+# Copy the remaining source code.
 COPY FleetPulse.Api/ FleetPulse.Api/
 COPY FleetPulse.Infrastructure/ FleetPulse.Infrastructure/
 COPY FleetPulse.Contracts/ FleetPulse.Contracts/
