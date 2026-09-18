@@ -11,7 +11,7 @@ RUN npm ci
 COPY frontend/. .
 RUN npm run build
 
-# Stage 2: Serve the frontend using Nginx
+# Stage 2: Serve the frontend using Nginx.
 FROM nginx:alpine AS final
 
 COPY --from=build /app/dist /usr/share/nginx/html
